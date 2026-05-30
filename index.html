@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECU TUNING DATABASE</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #050810;
+  --panel: #0b1022;
+  --card: #0f1629;
+  --border: #1c2540;
+  --legendary: #f5c518;
+  --rare: #d63af9;
+  --common-col: rgba(200,210,240,0.7);
+  --ss: #ff3a3a;
+  --s: #ff8c00;
+  --a: #f5c518;
+  --b: #39ff14;
+  --c: #00d4ff;
+  --d: #888;
+  --cyan: #00d4ff;
+  --green: #39ff14;
+  --red: #ff3a3a;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: #dde4f0;
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* grid bg */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background-image:
+    linear-gradient(rgba(0,212,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.025) 1px, transparent 1px);
+  background-size: 36px 36px;
+  animation: gridMove 25s linear infinite;
+  pointer-events:none; z-index:0;
+}
+@keyframes gridMove { to { background-position: 36px 36px; } }
+
+.wrap { position:relative; z-index:1; max-width:900px; margin:0 auto; padding:0 12px 60px; }
+
+/* ── HERO ── */
+.hero { text-align:center; padding:36px 0 24px; }
+.hero-eye {
+  font-family:'Share Tech Mono',monospace;
+  font-size:10px; letter-spacing:5px; color:var(--cyan);
+  margin-bottom:10px;
+}
+.hero-title {
+  font-family:'Orbitron',monospace;
+  font-size:clamp(22px,6vw,48px); font-weight:900;
+  letter-spacing:3px; line-height:1.1;
+  background:linear-gradient(135deg,#fff 0%,var(--cyan) 50%,var(--rare) 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.hero-sub {
+  font-family:'Share Tech Mono',monospace;
+  font-size:11px; color:rgba(255,255,255,0.35);
+  letter-spacing:2px; margin-top:10px;
+}
+
+/* ── STATS ── */
+.stats {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  gap:6px; margin:20px 0;
+}
+.stat {
+  background:var(--panel); border:1px solid var(--border);
+  padding:10px 6px; text-align:center;
+  clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+}
+.stat-v {
+  font-family:'Orbitron',monospace;
+  font-size:18px; font-weight:900; color:#fff;
+}
+.stat-l {
+  font-family:'Share Tech Mono',monospace;
+  font-size:8px; letter-spacing:1px; color:rgba(255,255,255,0.3);
+  text-transform:uppercase; margin-top:2px;
+}
+
+/* ── SEARCH ── */
+.search {
+  display:flex; align-items:center; gap:10px;
+  background:var(--panel); border:1px solid var(--border);
+  padding:11px 16px; margin-bottom:16px;
+  clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);
+}
+.search svg { color:rgba(255,255,255,0.3); flex-shrink:0; }
+.search input {
+  background:none; border:none; outline:none;
+  color:#fff; font-family:'Share Tech Mono',monospace;
+  font-size:13px; width:100%; letter-spacing:1px;
+}
+.search input::placeholder { color:rgba(255,255,255,0.2); }
+
+/* ── TABS ── */
+.tabs { display:flex; gap:6px; margin-bottom:20px; flex-wrap:wrap; }
+.tab {
+  font-family:'Orbitron',monospace; font-size:10px;
+  font-weight:700; letter-spacing:1.5px;
+  padding:9px 16px; border:1px solid var(--border);
+  background:var(--panel); color:rgba(255,255,255,0.35);
+  cursor:pointer; transition:all .2s; flex:1; text-align:center;
+  clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+  min-width:80px;
+}
+.tab.active[data-c="standard"]{ border-color:var(--green); color:var(--green); background:rgba(57,255,20,0.08); box-shadow:0 0 16px rgba(57,255,20,0.15); }
+.tab.active[data-c="sport"]   { border-color:var(--cyan);  color:var(--cyan);  background:rgba(0,212,255,0.08); box-shadow:0 0 16px rgba(0,212,255,0.15); }
+.tab.active[data-c="extreme"] { border-color:var(--red);   color:var(--red);   background:rgba(255,58,58,0.08);  box-shadow:0 0 16px rgba(255,58,58,0.15); }
+
+/* ── CATEGORY ── */
+.cat { display:none; }
+.cat.active { display:block; animation:fadeIn .25s; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+/* ── SECTION ── */
+.sec { margin-bottom:20px; border:1px solid var(--border); background:var(--panel); overflow:hidden; position:relative; }
+.sec::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+.sec.legendary::before { background:linear-gradient(90deg,transparent,var(--legendary),transparent); }
+.sec.rare::before      { background:linear-gradient(90deg,transparent,var(--rare),transparent); }
+.sec.common::before    { background:linear-gradient(90deg,transparent,rgba(255,255,255,0.4),transparent); }
+
+.sec-head {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px; cursor:pointer; user-select:none;
+  transition:background .2s;
+}
+.sec-head:hover { background:rgba(255,255,255,0.03); }
+.sec.legendary .sec-head { background:linear-gradient(90deg,rgba(245,197,24,0.1),transparent); }
+.sec.rare .sec-head      { background:linear-gradient(90deg,rgba(214,58,249,0.1),transparent); }
+.sec.common .sec-head    { background:linear-gradient(90deg,rgba(255,255,255,0.04),transparent); }
+
+.sec-icon { font-size:18px; flex-shrink:0; }
+.sec-title {
+  font-family:'Orbitron',monospace; font-size:11px;
+  font-weight:700; letter-spacing:2px; text-transform:uppercase; flex:1;
+  line-height:1.3;
+}
+.sec.legendary .sec-title { color:var(--legendary); text-shadow:0 0 15px rgba(245,197,24,0.4); }
+.sec.rare .sec-title      { color:var(--rare); text-shadow:0 0 15px rgba(214,58,249,0.4); }
+.sec.common .sec-title    { color:rgba(255,255,255,0.6); }
+
+.sec-meta { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.sec-count {
+  font-family:'Share Tech Mono',monospace; font-size:10px;
+  letter-spacing:1px; padding:3px 8px; border:1px solid currentColor; opacity:.5;
+}
+.sec.legendary .sec-count { color:var(--legendary); }
+.sec.rare .sec-count      { color:var(--rare); }
+.sec.common .sec-count    { color:rgba(255,255,255,0.4); }
+
+.chevron {
+  font-size:12px; opacity:.4; transition:transform .25s;
+  font-family:'Share Tech Mono',monospace;
+}
+.sec.collapsed .chevron { transform:rotate(-90deg); }
+
+/* ── CARDS GRID ── */
+.cards-wrap { padding:10px 12px 14px; }
+.sec.collapsed .cards-wrap { display:none; }
+
+.cards { display:grid; gap:8px; grid-template-columns:1fr; }
+
+/* ── SINGLE CARD ── */
+.card {
+  background:var(--card); border:1px solid var(--border);
+  padding:12px 14px; transition:border-color .2s, background .2s;
+  position:relative; overflow:hidden;
+}
+.card:hover { border-color:rgba(255,255,255,0.18); background:rgba(255,255,255,0.03); }
+.card.hidden { display:none; }
+
+/* left accent bar */
+.card::before {
+  content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+}
+.sec.legendary .card::before { background:var(--legendary); }
+.sec.rare .card::before      { background:var(--rare); }
+.sec.common .card::before    { background:rgba(255,255,255,0.25); }
+
+/* top row: brand + tier + tune */
+.card-top {
+  display:flex; align-items:center; gap:8px; margin-bottom:6px;
+}
+.card-brand {
+  font-family:'Share Tech Mono',monospace; font-size:10px;
+  letter-spacing:1px; color:rgba(255,255,255,0.4);
+  flex:1; text-transform:uppercase;
+}
+.tier-hex {
+  display:flex; align-items:center; justify-content:center;
+  width:32px; height:32px; flex-shrink:0;
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  font-family:'Orbitron',monospace; font-size:10px; font-weight:900;
+}
+.tier-SS { background:var(--ss); color:#fff; box-shadow:0 0 10px rgba(255,58,58,0.5); }
+.tier-S  { background:var(--s);  color:#fff; box-shadow:0 0 10px rgba(255,140,0,0.5); }
+.tier-A  { background:var(--a);  color:#000; box-shadow:0 0 10px rgba(245,197,24,0.5); }
+.tier-B  { background:var(--b);  color:#000; box-shadow:0 0 10px rgba(57,255,20,0.4); }
+.tier-C  { background:var(--c);  color:#000; box-shadow:0 0 10px rgba(0,212,255,0.4); }
+.tier-D  { background:var(--d);  color:#000; }
+
+.tune-row {
+  display:flex; gap:3px; align-items:center; flex-shrink:0;
+}
+.tune-digit {
+  font-family:'Orbitron',monospace; font-size:14px; font-weight:700;
+  width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+  border-radius:3px;
+}
+.t1 { color:#39ff14; background:rgba(57,255,20,0.12); }
+.t2 { color:#00d4ff; background:rgba(0,212,255,0.12); }
+.t3 { color:#f5c518; background:rgba(245,197,24,0.12); }
+
+/* bottom row: name + rarity */
+.card-bot {
+  display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
+}
+.card-name {
+  font-weight:700; font-size:16px; color:#fff; flex:1; min-width:0;
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+}
+.badge-new {
+  font-family:'Orbitron',monospace; font-size:8px; font-weight:700;
+  padding:2px 5px; background:var(--red); color:#fff; letter-spacing:1px;
+  animation:pulse 2s infinite; flex-shrink:0;
+  border-radius:2px;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.card-rarity {
+  font-family:'Share Tech Mono',monospace; font-size:10px;
+  letter-spacing:1px; color:rgba(255,255,255,0.3); flex-shrink:0;
+}
+
+/* ── EMPTY ── */
+.empty { text-align:center; padding:50px 20px; display:none;
+  font-family:'Share Tech Mono',monospace; font-size:12px;
+  color:rgba(255,255,255,0.2); letter-spacing:2px; }
+
+/* ── LEGEND ── */
+.legend {
+  display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;
+  padding:10px 14px; background:var(--panel); border:1px solid var(--border);
+}
+.legend-item { display:flex; align-items:center; gap:5px; }
+.legend-hex {
+  width:18px; height:18px;
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Orbitron',monospace; font-size:7px; font-weight:900;
+}
+.legend-txt {
+  font-family:'Share Tech Mono',monospace; font-size:10px;
+  color:rgba(255,255,255,0.35); letter-spacing:1px;
+}
+.tune-legend { display:flex; gap:10px; flex-wrap:wrap; margin-left:auto; }
+.tl-item { display:flex; align-items:center; gap:4px; }
+.tl-box {
+  font-family:'Orbitron',monospace; font-size:10px; font-weight:700;
+  width:18px; height:18px; border-radius:2px;
+  display:flex; align-items:center; justify-content:center;
+}
+.tl-txt { font-family:'Share Tech Mono',monospace; font-size:9px; color:rgba(255,255,255,0.3); }
+
+@media(min-width:600px) {
+  .cards { grid-template-columns:1fr 1fr; }
+}
+@media(min-width:900px) {
+  .cards { grid-template-columns:1fr 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eye">// GARAGE DATABASE v2.5 //</div>
+  <div class="hero-title">ECU TUNING<br>DATABASE</div>
+  <div class="hero-sub">UPGRADE 25/25 &nbsp;·&nbsp; SIGNATURE TUNES</div>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat"><div class="stat-v" style="color:var(--green)">3</div><div class="stat-l">Categorías</div></div>
+  <div class="stat"><div class="stat-v" style="color:var(--legendary)">9</div><div class="stat-l">Secciones</div></div>
+  <div class="stat"><div class="stat-v">51</div><div class="stat-l">Autos</div></div>
+  <div class="stat"><div class="stat-v" style="color:var(--red)">2</div><div class="stat-l">NEW</div></div>
+</div>
+
+<!-- SEARCH -->
+<div class="search">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+  <input type="text" id="searchInput" placeholder="BUSCAR MARCA O MODELO..." autocomplete="off">
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" data-c="standard" onclick="switchTab('standard')">⬡ STANDARD</button>
+  <button class="tab" data-c="sport"    onclick="switchTab('sport')">◈ SPORT</button>
+  <button class="tab" data-c="extreme"  onclick="switchTab('extreme')">◉ EXTREME</button>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-hex tier-SS" style="width:18px;height:18px;font-size:7px">SS</div><span class="legend-txt">SS</span></div>
+  <div class="legend-item"><div class="legend-hex tier-S"  style="width:18px;height:18px;font-size:7px">S</div><span class="legend-txt">S</span></div>
+  <div class="legend-item"><div class="legend-hex tier-A"  style="width:18px;height:18px;font-size:7px">A</div><span class="legend-txt">A</span></div>
+  <div class="legend-item"><div class="legend-hex tier-B"  style="width:18px;height:18px;font-size:7px">B</div><span class="legend-txt">B</span></div>
+  <div class="legend-item"><div class="legend-hex tier-C"  style="width:18px;height:18px;font-size:7px">C</div><span class="legend-txt">C</span></div>
+  <div class="tune-legend">
+    <div class="tl-item"><div class="tl-box t1">1</div><span class="tl-txt">dig.1</span></div>
+    <div class="tl-item"><div class="tl-box t2">2</div><span class="tl-txt">dig.2</span></div>
+    <div class="tl-item"><div class="tl-box t3">3</div><span class="tl-txt">dig.3</span></div>
+  </div>
+</div>
+
+<div class="empty" id="emptyState">[ SIN RESULTADOS ]</div>
+
+<!-- ════════════ STANDARD ════════════ -->
+<div class="cat active" id="cat-standard">
+
+  <div class="sec legendary" id="s0">
+    <div class="sec-head" onclick="toggleSec('s0')">
+      <span class="sec-icon">⚡</span>
+      <span class="sec-title">Standard Legendary · ECU 0</span>
+      <span class="sec-meta"><span class="sec-count">14</span><span class="chevron">▼</span></span>
+    </div>
+    <div class="cards-wrap"><div class="cards">
+      <div class="card" data-search="nissan silvia s15 limited ss">
+        <div class="card-top"><span class="card-brand">Nissan</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div>
+        <div class="card-bot"><span class="card-name">Silvia (S15)</span><span class="card-rarity">Limited</span></div>
+      </div>
+      <div class="card" data-search="lotus emira limited ss new">
+        <div class="card-top"><span class="card-brand">Lotus</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div>
+        <div class="card-bot"><span class="card-name">Emira <span class="badge-new">NEW</span></span><span class="card-rarity">Limited</span></div>
+      </div>
+      <div class="card" data-search="nissan skyline r32 reworked limited ss new">
+        <div class="card-top"><span class="card-brand">Nissan</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div>
+        <div class="card-bot"><span class="card-name">Skyline R32 <span class="badge-new">NEW</span></span><span class="card-rarity">Limited</span></div>
+      </div>
+      <div class="card" data-search="citroen xsara wrc limited ss">
+        <div class="card-top"><span class="card-brand">Citroen</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div>
+        <div class="card-bot"><span class="card-name">Xsara WRC</span><span class="card-rarity">Limited</span></div>
+      </div>
+      <div class="card" data-search="aston martin db5 vantage battle pass s3 ss">
+        <div class="card-top"><span class="card-brand">Aston Martin</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div>
+        <div class="card-bot"><span class="card-name">DB5 Vantage</span><span class="card-rarity">Battle Pass S3</span></div>
+      </div>
+      <div class="card" data-search="bmw z4 sdrive 35is expo top-up ss">
+        <div class="card-top"><span class="card-brand">BMW</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div>
+        <div class="card-bot"><span class="card-name">Z4 sDrive 35is</span><span class="card-rarity">EXPO / Top-Up</span></div>
+      </div>
+      <div class="card" data-search="chevrolet camaro z28 expo ss">
+        <div class="card-top"><span class="card-brand">Chevrolet</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div>
+        <div class="card-bot"><span class="card-name">Camaro Z/28</span><span class="card-rarity">EXPO</span></div>
+      </div>
+      <div class="card" data-search="toyota trueno ae86 limited ss">
+        <div class="card-top"><span class="card-brand">Toyota</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div>
+        <div class="card-bot"><span class="card-name">Trueno AE86</span><span class="card-rarity">Limited</span></div>
+      </div>
+      <div class="card" data-search="porsche 911 carrera 4 limited battle-pass s">
+        <div class="card-top"><span class="card-brand">Porsche</span><div class="tier-hex tier-S">S</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div>
+        <div class="card-bot"><span class="card-name">911 Carrera 4</span><span class="card-rarity">Limited / Battle-Pass</span></div>
+      </div>
+      <div class="card" data-search="mitsubishi lancer evo iii gsr expo top-up s">
+        <div class="card-top"><span class="card-brand">Mitsubishi</span><div class="tier-hex tier-S">S</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div>
+        <div class="card-bot"><span class="card-name">Lancer Evo III GSR</span><span class="card-rarity">EXPO / Top-Up</span></div>
+      </div>
+      <div class="card" data-search="mini john cooper work gp expo top-up a">
+        <div class="card-top"><span class="card-brand">Mini</span><div class="tier-hex tier-A">A</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div>
+        <div class="card-bot"><span class="card-name">John Cooper Work GP</span><span class="card-rarity">EXPO / Top-Up</span></div>
+      </div>
+      <div class="card" data-search="ford mustang mach 1 expo a">
+        <div class="card-top"><span class="card-brand">Ford</span><div class="tier-hex tier-A">A</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div>
+        <div class="card-bot"><span class="card-name">Mustang Mach 1</span><span class="card-rarity">EXPO</span></div>
+      </div>
+      <div class="card" data-search="bmw 2 m235i xdrive expo b">
+        <div class="card-top"><span class="card-brand">BMW</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div>
+        <div class="card-bot"><span class="card-name">2 M235i xDrive</span><span class="card-rarity">EXPO</span></div>
+      </div>
+      <div class="card" data-search="chevrolet corvette c3 expo c">
+        <div class="card-top"><span class="card-brand">Chevrolet</span><div class="tier-hex tier-C">C</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div>
+        <div class="card-bot"><span class="card-name">Corvette C3</span><span class="card-rarity">EXPO</span></div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="sec rare" id="s1">
+    <div class="sec-head" onclick="toggleSec('s1')">
+      <span class="sec-icon">💜</span>
+      <span class="sec-title">Standard Rare · ECU 5</span>
+      <span class="sec-meta"><span class="sec-count">5</span><span class="chevron">▼</span></span>
+    </div>
+    <div class="cards-wrap"><div class="cards">
+      <div class="card" data-search="bmw 330i expo s"><div class="card-top"><span class="card-brand">BMW</span><div class="tier-hex tier-S">S</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">330i</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="volkswagen golf r expo s"><div class="card-top"><span class="card-brand">Volkswagen</span><div class="tier-hex tier-S">S</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Golf R</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="subaru brz expo a"><div class="card-top"><span class="card-brand">Subaru</span><div class="tier-hex tier-A">A</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">BRZ</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="ford focus rs seasonal event b"><div class="card-top"><span class="card-brand">Ford</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Focus RS</span><span class="card-rarity">Seasonal Event</span></div></div>
+      <div class="card" data-search="infinity q60 expo b"><div class="card-top"><span class="card-brand">Infinity</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t1">1</span><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Q60</span><span class="card-rarity">EXPO</span></div></div>
+    </div></div>
+  </div>
+
+  <div class="sec common" id="s2">
+    <div class="sec-head" onclick="toggleSec('s2')">
+      <span class="sec-icon">◻</span>
+      <span class="sec-title">Standard Common · ECU 5</span>
+      <span class="sec-meta"><span class="sec-count">4</span><span class="chevron">▼</span></span>
+    </div>
+    <div class="cards-wrap"><div class="cards">
+      <div class="card" data-search="mazda miata mx5 expo b"><div class="card-top"><span class="card-brand">Mazda</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Miata MX5</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="volkswagen passat 2.0 sti expo b"><div class="card-top"><span class="card-brand">Volkswagen</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Passat 2.0 STI</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="honda fit expo b"><div class="card-top"><span class="card-brand">Honda</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Fit</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="ford fiesta st expo c"><div class="card-top"><span class="card-brand">Ford</span><div class="tier-hex tier-C">C</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Fiesta ST</span><span class="card-rarity">EXPO</span></div></div>
+    </div></div>
+  </div>
+
+</div><!-- /standard -->
+
+<!-- ════════════ SPORT ════════════ -->
+<div class="cat" id="cat-sport">
+
+  <div class="sec legendary" id="sp0">
+    <div class="sec-head" onclick="toggleSec('sp0')">
+      <span class="sec-icon">⚡</span><span class="sec-title">Sport Legendary · ECU 0</span>
+      <span class="sec-meta"><span class="sec-count">16</span><span class="chevron">▼</span></span>
+    </div>
+    <div class="cards-wrap"><div class="cards">
+      <div class="card" data-search="mclaren 570s coupe limited ss"><div class="card-top"><span class="card-brand">McLaren</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">570S Coupe</span><span class="card-rarity">Limited</span></div></div>
+      <div class="card" data-search="mercedes-benz sls limited ss new"><div class="card-top"><span class="card-brand">Mercedes-Benz</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">SLS <span class="badge-new">NEW</span></span><span class="card-rarity">Limited</span></div></div>
+      <div class="card" data-search="porsche 911 cabriolet s 992 limited ss"><div class="card-top"><span class="card-brand">Porsche</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">911 Cabriolet S (992)</span><span class="card-rarity">Limited</span></div></div>
+      <div class="card" data-search="audi rs7 sportback daily login expo ss"><div class="card-top"><span class="card-brand">Audi</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">RS7 Sportback</span><span class="card-rarity">Daily Login / EXPO</span></div></div>
+      <div class="card" data-search="mercedes-amg sl 63 expo ss"><div class="card-top"><span class="card-brand">Mercedes-AMG</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">SL 63</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="lamborghini gallardo lp570-4 limited s"><div class="card-top"><span class="card-brand">Lamborghini</span><div class="tier-hex tier-S">S</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Gallardo LP570-4</span><span class="card-rarity">Limited</span></div></div>
+      <div class="card" data-search="nissan gt-r35 top-up reward s"><div class="card-top"><span class="card-brand">Nissan</span><div class="tier-hex tier-S">S</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">GT-R35</span><span class="card-rarity">Top-Up Reward</span></div></div>
+      <div class="card" data-search="jaguar f-type project 7 season reward s"><div class="card-top"><span class="card-brand">Jaguar</span><div class="tier-hex tier-S">S</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">F-Type Project 7</span><span class="card-rarity">Season Reward</span></div></div>
+      <div class="card" data-search="bmw 3 series m3 vehicle pack a"><div class="card-top"><span class="card-brand">BMW</span><div class="tier-hex tier-A">A</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">3 Series M3</span><span class="card-rarity">Vehicle Pack</span></div></div>
+      <div class="card" data-search="hyundai ioniq 5 n limited a"><div class="card-top"><span class="card-brand">Hyundai</span><div class="tier-hex tier-A">A</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Ioniq 5 N</span><span class="card-rarity">Limited</span></div></div>
+      <div class="card" data-search="porsche panamera turbo expo top-up b"><div class="card-top"><span class="card-brand">Porsche</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Panamera Turbo</span><span class="card-rarity">EXPO / Top-Up</span></div></div>
+      <div class="card" data-search="bmw m4 coupe expo top-up b"><div class="card-top"><span class="card-brand">BMW</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">M4 Coupe</span><span class="card-rarity">EXPO / Top-Up</span></div></div>
+      <div class="card" data-search="chevrolet corvette c7 expo top-up b"><div class="card-top"><span class="card-brand">Chevrolet</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Corvette C7</span><span class="card-rarity">EXPO / Top-Up</span></div></div>
+      <div class="card" data-search="lotus evora expo b"><div class="card-top"><span class="card-brand">Lotus</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Evora</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="honda nsx-r expo b"><div class="card-top"><span class="card-brand">Honda</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">NSX-R</span><span class="card-rarity">EXPO</span></div></div>
+    </div></div>
+  </div>
+
+  <div class="sec rare" id="sp1">
+    <div class="sec-head" onclick="toggleSec('sp1')">
+      <span class="sec-icon">💜</span><span class="sec-title">Sport Rare · ECU 5</span>
+      <span class="sec-meta"><span class="sec-count">7</span><span class="chevron">▼</span></span>
+    </div>
+    <div class="cards-wrap"><div class="cards">
+      <div class="card" data-search="hyundai veloster n expo s"><div class="card-top"><span class="card-brand">Hyundai</span><div class="tier-hex tier-S">S</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Veloster N</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="dodge challenger r/t seasonal event s"><div class="card-top"><span class="card-brand">Dodge</span><div class="tier-hex tier-S">S</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Challenger R/T</span><span class="card-rarity">Seasonal Event</span></div></div>
+      <div class="card" data-search="ford mustang gt expo s"><div class="card-top"><span class="card-brand">Ford</span><div class="tier-hex tier-S">S</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Mustang GT</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="audi tts coupe seasonal event a"><div class="card-top"><span class="card-brand">Audi</span><div class="tier-hex tier-A">A</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">TTS Coupe</span><span class="card-rarity">Seasonal Event</span></div></div>
+      <div class="card" data-search="subaru wrx sti expo b"><div class="card-top"><span class="card-brand">Subaru</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">WRX STI</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="mitsubishi lancer evo x gsr expo b"><div class="card-top"><span class="card-brand">Mitsubishi</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Lancer Evo X GSR</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="cadillac ats-v expo b"><div class="card-top"><span class="card-brand">Cadillac</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">ATS-V</span><span class="card-rarity">EXPO</span></div></div>
+    </div></div>
+  </div>
+
+  <div class="sec common" id="sp2">
+    <div class="sec-head" onclick="toggleSec('sp2')">
+      <span class="sec-icon">◻</span><span class="sec-title">Sport Common · ECU 5</span>
+      <span class="sec-meta"><span class="sec-count">3</span><span class="chevron">▼</span></span>
+    </div>
+    <div class="cards-wrap"><div class="cards">
+      <div class="card" data-search="audi s5 cabriolet expo b"><div class="card-top"><span class="card-brand">Audi</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">S5 Cabriolet</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="volvo v60 polestar expo b"><div class="card-top"><span class="card-brand">Volvo</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">V60 Polestar</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="nissan 370z expo c"><div class="card-top"><span class="card-brand">Nissan</span><div class="tier-hex tier-C">C</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">370Z</span><span class="card-rarity">EXPO</span></div></div>
+    </div></div>
+  </div>
+
+</div><!-- /sport -->
+
+<!-- ════════════ EXTREME ════════════ -->
+<div class="cat" id="cat-extreme">
+
+  <div class="sec legendary" id="ex0">
+    <div class="sec-head" onclick="toggleSec('ex0')">
+      <span class="sec-icon">⚡</span><span class="sec-title">Extreme Legendary · ECU 0</span>
+      <span class="sec-meta"><span class="sec-count">14</span><span class="chevron">▼</span></span>
+    </div>
+    <div class="cards-wrap"><div class="cards">
+      <div class="card" data-search="pagani huayra bc limited ss"><div class="card-top"><span class="card-brand">Pagani</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Huayra BC</span><span class="card-rarity">Limited</span></div></div>
+      <div class="card" data-search="bugatti centodieci limited ss"><div class="card-top"><span class="card-brand">Bugatti</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Centodieci</span><span class="card-rarity">Limited</span></div></div>
+      <div class="card" data-search="bugatti chiron limited ss"><div class="card-top"><span class="card-brand">Bugatti</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Chiron</span><span class="card-rarity">Limited</span></div></div>
+      <div class="card" data-search="koenigsegg agera rs limited ss"><div class="card-top"><span class="card-brand">Koenigsegg</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t3">3</span><span class="tune-digit t1">1</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Agera RS</span><span class="card-rarity">Limited</span></div></div>
+      <div class="card" data-search="porsche 918 spyder limited ss"><div class="card-top"><span class="card-brand">Porsche</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">918 Spyder</span><span class="card-rarity">Limited</span></div></div>
+      <div class="card" data-search="mercedes-amg amg gt r coupe expo ss"><div class="card-top"><span class="card-brand">Mercedes-AMG</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">AMG GT R Coupe</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="ford gt expo top-up s"><div class="card-top"><span class="card-brand">Ford</span><div class="tier-hex tier-S">S</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">GT</span><span class="card-rarity">EXPO / Top-Up</span></div></div>
+      <div class="card" data-search="ferrari sf90 limited s"><div class="card-top"><span class="card-brand">Ferrari</span><div class="tier-hex tier-S">S</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">SF90</span><span class="card-rarity">Limited</span></div></div>
+      <div class="card" data-search="lamborghini aventador limited a"><div class="card-top"><span class="card-brand">Lamborghini</span><div class="tier-hex tier-A">A</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t1">1</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Aventador</span><span class="card-rarity">Limited</span></div></div>
+      <div class="card" data-search="audi r8 spyder expo a"><div class="card-top"><span class="card-brand">Audi</span><div class="tier-hex tier-A">A</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">R8 Spyder</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="bmw m8 gte expo top-up a"><div class="card-top"><span class="card-brand">BMW</span><div class="tier-hex tier-A">A</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">M8 GTE</span><span class="card-rarity">EXPO / Top-Up</span></div></div>
+      <div class="card" data-search="ferrari f8 tributo expo b"><div class="card-top"><span class="card-brand">Ferrari</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">F8 Tributo</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="dodge srt hellcat expo b"><div class="card-top"><span class="card-brand">Dodge</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t1">1</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">SRT Hellcat</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="mclaren 720s expo top-up c"><div class="card-top"><span class="card-brand">McLaren</span><div class="tier-hex tier-C">C</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">720S</span><span class="card-rarity">EXPO / Top-Up</span></div></div>
+    </div></div>
+  </div>
+
+  <div class="sec rare" id="ex1">
+    <div class="sec-head" onclick="toggleSec('ex1')">
+      <span class="sec-icon">💜</span><span class="sec-title">Extreme Rare · ECU 5</span>
+      <span class="sec-meta"><span class="sec-count">7</span><span class="chevron">▼</span></span>
+    </div>
+    <div class="cards-wrap"><div class="cards">
+      <div class="card" data-search="porsche taycan turbo s battle pass s1 ss"><div class="card-top"><span class="card-brand">Porsche</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Taycan Turbo S</span><span class="card-rarity">Battle Pass S1</span></div></div>
+      <div class="card" data-search="lotus exige cup 430 battle pass s2 ss"><div class="card-top"><span class="card-brand">Lotus</span><div class="tier-hex tier-SS">SS</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Exige Cup 430</span><span class="card-rarity">Battle Pass S2</span></div></div>
+      <div class="card" data-search="chevrolet corvette c8 expo s"><div class="card-top"><span class="card-brand">Chevrolet</span><div class="tier-hex tier-S">S</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Corvette C8</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="aston martin db11 expo a"><div class="card-top"><span class="card-brand">Aston Martin</span><div class="tier-hex tier-A">A</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span></div></div><div class="card-bot"><span class="card-name">DB11</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="lamborghini huracan lp620-2 expo b"><div class="card-top"><span class="card-brand">Lamborghini</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Huracan LP620-2</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="jaguar e-type expo b"><div class="card-top"><span class="card-brand">Jaguar</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">E-Type</span><span class="card-rarity">EXPO</span></div></div>
+      <div class="card" data-search="dodge viper srt-10 expo b"><div class="card-top"><span class="card-brand">Dodge</span><div class="tier-hex tier-B">B</div><div class="tune-row"><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">Viper SRT-10</span><span class="card-rarity">EXPO</span></div></div>
+    </div></div>
+  </div>
+
+  <div class="sec common" id="ex2">
+    <div class="sec-head" onclick="toggleSec('ex2')">
+      <span class="sec-icon">◻</span><span class="sec-title">Extreme Common · ECU 5</span>
+      <span class="sec-meta"><span class="sec-count">1</span><span class="chevron">▼</span></span>
+    </div>
+    <div class="cards-wrap"><div class="cards">
+      <div class="card" data-search="audi e-tron gt quattro expo d"><div class="card-top"><span class="card-brand">Audi</span><div class="tier-hex tier-D">D</div><div class="tune-row"><span class="tune-digit t1">1</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t3">3</span><span class="tune-digit t2">2</span></div></div><div class="card-bot"><span class="card-name">e-tron GT Quattro</span><span class="card-rarity">EXPO</span></div></div>
+    </div></div>
+  </div>
+
+</div><!-- /extreme -->
+
+</div><!-- /wrap -->
+
+<script>
+function switchTab(c) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.cat').forEach(x => x.classList.remove('active'));
+  document.querySelector(`[data-c="${c}"]`).classList.add('active');
+  document.getElementById(`cat-${c}`).classList.add('active');
+  filterCards(document.getElementById('searchInput').value);
+}
+
+function toggleSec(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+document.getElementById('searchInput').addEventListener('input', function() {
+  filterCards(this.value);
+});
+
+function filterCards(q) {
+  q = q.toLowerCase().trim();
+  let any = false;
+  document.querySelectorAll('.cat.active .card').forEach(card => {
+    const match = !q || card.dataset.search.includes(q) || card.textContent.toLowerCase().includes(q);
+    card.classList.toggle('hidden', !match);
+    if(match) any = true;
+    // auto-expand sections with results
+    if(match && q) {
+      const sec = card.closest('.sec');
+      if(sec) sec.classList.remove('collapsed');
+    }
+  });
+  document.getElementById('emptyState').style.display = (q && !any) ? 'block' : 'none';
+}
+</script>
+</body>
+</html>
